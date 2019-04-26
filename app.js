@@ -1,73 +1,89 @@
-const express = require('express');
+
+
+const express = require('express'); 
+
 const multer = require('multer');
-const ejs = require('ejs');
-const path = require('path');
 
-// Set The Storage Engine
-const storage = multer.diskStorage({
-  destination: './public/uploads/',
-  filename: function(req, file, cb){
-    cb(null,file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-  }
+const ejs =require('ejs');
+
+const connection = require('express')
+
+
+const path =require('path');
+
+// init app
+const myapp =express();
+//ejs
+
+
+//storage
+
+const uploads = multer.diskStorage({
+	destination: './resources/upload/',
+	filename: function(req,file,cb) {
+		cb(null,file.fieldname + '_' + Date.now() 
+			+path.extname(file.originalname));
+	}
+
 });
 
-// Init Upload
-const upload = multer({
-  storage: storage,
-  limits:{fileSize: 1000000},
-  fileFilter: function(req, file, cb){
-    checkFileType(file, cb);
-  }
-}).single('myImage');
+//init upload
+const upload = multer ({
+	storage: uploads,
+	fileFilter: function(req,file, cb){
 
-// Check File Type
-function checkFileType(file, cb){
-  // Allowed ext
-  const filetypes = /jpeg|jpg|png|gif/;
-  // Check ext
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  // Check mime
-  const mimetype = filetypes.test(file.mimetype);
+		fileTypeCheck(file,cb);
 
-  if(mimetype && extname){
-    return cb(null,true);
-  } else {
-    cb('Error: Images Only!');
-  }
-}
+	}
+}).single('myimage');
 
-// Init app
-const app = express();
+function fileTypeCheck(file,cb){
+			const filetypes = /jpeg|jpg|png/;
+			const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
 
-// EJS
-app.set('view engine', 'ejs');
+			const mimetype = filetypes.test(file.mimetype);
 
-// Public Folder
-app.use(express.static('./public'));
+			if(mimetype && extname)	{
+				return cb(null,true);
+			}	else{
+				cb('Error: Images only');
+			}
 
-app.get('/', (req, res) => res.render('index'));
+		}
 
-app.post('/upload', (req, res) => {
-  upload(req, res, (err) => {
-    if(err){
-      res.render('index', {
-        msg: err
-      });
-    } else {
-      if(req.file == undefined){
-        res.render('index', {
-          msg: 'Error: No File Selected!'
-        });
-      } else {
-        res.render('index', {
-          msg: 'File Uploaded!',
-          file: `uploads/${req.file.filename}`
-        });
-      }
-    }
-  });
+
+
+// folder where view files are kept
+
+myapp.use(connection.static( path.join(__dirname,'resources')));
+myapp.set ('views',__dirname+ '/views')
+
+myapp.set('view engine', 'ejs');
+
+
+	
+myapp.get('/',(req,res) => res.render('index'));
+
+myapp.post('/upload',(req,res) => {
+
+	upload(req,res ,(err) => {
+
+		if(err){
+			res.render('index',{
+				msg: 'Error: No file Selected'
+			});
+
+		}else {
+			console.log(req.file);
+			res.send(' Image Uploaded');
+		}
+
+	})
+
 });
 
-const port = 3000;
+const port = process.env.PORT || 7000
 
-app.listen(port, () => console.log(`Server started on port ${port}`));
+myapp.listen(port,()=> {
+  console.log('Server has started')
+});
